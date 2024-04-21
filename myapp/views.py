@@ -8,13 +8,16 @@ from django.utils import timezone
 @api_view(['POST'])
 def check_phone_number(request):
     phone_number = request.data.get('phone_number')
-    user, created = User.objects.get_or_create(phone_number=phone_number)
-    if not created:
-        if user.code_created_at is None or timezone.now() - user.code_created_at > timedelta(minutes=5):
-            user.verif_code = generate_verification_code()
-            user.code_created_at = timezone.now()
-            user.save()
-    return Response({"code_verification": user.verif_code})
+    if phone_number:
+        user, created = User.objects.get_or_create(phone_number=phone_number)
+        if not created:
+            if user.code_created_at is None or timezone.now() - user.code_created_at > timedelta(minutes=5):
+                user.verif_code = generate_verification_code()
+                user.code_created_at = timezone.now()
+                user.save()
+        return Response({"code_verification": user.verif_code})
+    else:
+        return Response({"error": "Phone number is required."}, status=400)
 
 
 @api_view(['POST'])
@@ -45,7 +48,7 @@ def invite_user(request):
                 user.save()
                 return Response({"message": "User successfully invited."})
             else:
-                return Response({"error": "The user you are trying to invite does not exist"})
+                return Response({"error": "You have already invited a user"})
         else:
             return Response({"error": "You have already invited a user or no invite code provided."})
     else:
